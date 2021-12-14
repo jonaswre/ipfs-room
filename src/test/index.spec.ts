@@ -1,6 +1,8 @@
 //Polyfill TextEncoder, TextDecoder
 import { TextEncoder, TextDecoder } from 'util'
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 global.TextEncoder = TextEncoder as any
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 global.TextDecoder = TextDecoder as any
 
 import Room from '../room'
@@ -12,7 +14,7 @@ import { Controller } from 'ipfsd-ctl';
 jest.setTimeout(5 * 60 * 1000)
 
 let nodes: Controller[];
-let factory = createOwnFactory()
+const factory = createOwnFactory()
 
 
 beforeEach(async () => {

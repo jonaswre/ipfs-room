@@ -4,6 +4,8 @@ import * as IPFS from 'ipfs-core'
 import { Events, Messages, Options } from './types';
 import { decode, encode } from './utils';
 import { Message } from 'ipfs-core-types/src/pubsub'
+import { API as PubSubAPI } from 'ipfs-core-types/src/pubsub'
+
 
 
 export default class Room {
@@ -19,35 +21,35 @@ export default class Room {
     }
 
     //Easy getters
-    public get name() {
+    public get name(): string {
         return this._name
     }
 
-    protected get pubsub() {
+    protected get pubsub(): PubSubAPI {
         return this._ipfs.pubsub
     }
 
-    public async ipfsId() {
-        return await (await (this._ipfs.id())).id
+    public async ipfsId(): Promise<string> {
+        return (await (this._ipfs.id())).id
     }
 
-    public peerChannel(peer: string) {
+    public peerChannel(peer: string): string {
         return this._name + "/members/" + peer;
     }
 
-    public async join() {
+    public async join(): Promise<void> {
         if (this._joined)
             return
 
         const ipfsId = await this._ipfs.id()
 
-        await this.pubsub.subscribe(this._name, (message) => {
+        await this.pubsub.subscribe(this._name, (message: Message) => {
             if (message.from !== ipfsId.id) {
                 this.emitMessage(message)
             }
         })
 
-        await this.pubsub.subscribe(this.peerChannel(ipfsId.id), (message) => {
+        await this.pubsub.subscribe(this.peerChannel(ipfsId.id), (message: Message) => {
             if (message.from !== ipfsId.id)
                 this.emitDirectMessage(message)
         })
@@ -57,7 +59,7 @@ export default class Room {
         this._joined = true
     }
 
-    public async leave() {
+    public async leave(): Promise<void> {
         if (!this._joined)
             return
 
@@ -83,7 +85,7 @@ export default class Room {
 
 
     //Emitter
-    private emitMessage(message: Message) {
+    private emitMessage(message: Message): boolean {
         const decoded = decode(message.data);
         if (decoded === Messages.PeerJoin)
             return this.emitPeerJoined(message.from)
@@ -93,47 +95,47 @@ export default class Room {
         return this._emitter.emit(Events.Message, message)
     }
 
-    private emitDirectMessage(message: Message) {
-        this._emitter.emit(Events.DirectMessage, message)
+    private emitDirectMessage(message: Message): boolean {
+        return this._emitter.emit(Events.DirectMessage, message)
     }
 
-    private emitPeerJoined(peer: string) {
+    private emitPeerJoined(peer: string): boolean {
         return this._emitter.emit(Events.PeerJoined, peer)
     }
 
-    private emitPeerLeft(peer: string) {
+    private emitPeerLeft(peer: string): boolean {
         return this._emitter.emit(Events.PeerLeft, peer)
     }
 
 
     //Ons
-    public onMessage(handler: (message: Message) => void) {
+    public onMessage(handler: (message: Message) => void): void {
         this._emitter.on(Events.Message, handler)
     }
 
-    public onDirectMessage(handler: (message: Message) => void) {
+    public onDirectMessage(handler: (message: Message) => void): void {
         this._emitter.on(Events.DirectMessage, handler)
     }
 
-    public onPeerJoined(handler: (peer: string) => void) {
+    public onPeerJoined(handler: (peer: string) => void): void {
         this._emitter.on(Events.PeerJoined, handler)
     }
 
-    public onPeerLeft(handler: (peer: string) => void) {
+    public onPeerLeft(handler: (peer: string) => void): void {
         this._emitter.on(Events.PeerLeft, handler)
     }
 
 
 
     //send
-    public async sendMessageToPeer(message: string, ...peers: string[]) {
+    public async sendMessageToPeer(message: string, ...peers: string[]): Promise<void> {
         const encoded = encode(message)
-        for (let peer of peers) {
+        for (const peer of peers) {
             await this.pubsub.publish(this.peerChannel(peer), encoded)
         }
     }
 
-    public async sendMessage(message: string) {
+    public async sendMessage(message: string): Promise<void> {
         await this.pubsub.publish(this.name, encode(message))
     }
 }

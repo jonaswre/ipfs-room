@@ -1,7 +1,8 @@
+/* eslint-disable  @typescript-eslint/no-var-requires */
 import { Controller, createFactory, Factory } from "ipfsd-ctl";
 import { isNode } from 'ipfs-utils/src/env'
 
-export const createOwnFactory = () => createFactory(
+export const createOwnFactory: () => Factory = () => createFactory(
     {
         type: 'js',
         test: true,
@@ -22,16 +23,16 @@ export const createOwnFactory = () => createFactory(
     }
 )
 
-export async function createConnectedNodes(factory: Factory, count: number) {
+export async function createConnectedNodes(factory: Factory, count: number): Promise<Controller[]> {
     const nodes: Controller[] = []
 
     for (let i = 0; i < count; i++) {
         nodes.push(await factory.spawn())
     }
 
-    for (let node of nodes) {
+    for (const node of nodes) {
         const nodeId = await node.api.id()
-        for (let peer of nodes) {
+        for (const peer of nodes) {
             const peerId = await peer.api.id()
             if (nodeId.id !== peerId.id)
                 await node.api.swarm.connect(peerId.addresses[0])
@@ -41,10 +42,10 @@ export async function createConnectedNodes(factory: Factory, count: number) {
     return nodes
 }
 
-export function toBePartialCalled<T extends object>(done: jest.DoneCallback, expected: Partial<T>) {
+export function toBePartialCalled<T extends Record<string, unknown>>(done: jest.DoneCallback, expected: Partial<T>): (data: T) => void {
     return (data: T) => {
         try {
-            for (let prop in expected) {
+            for (const prop in expected) {
                 expect(data[prop]).toEqual(expected[prop])
             }
         } catch (error) {
@@ -53,6 +54,6 @@ export function toBePartialCalled<T extends object>(done: jest.DoneCallback, exp
     }
 }
 
-export function waitFor(s: number) {
+export function waitFor(s: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, s * 1000))
 }
